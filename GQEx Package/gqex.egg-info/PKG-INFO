@@ -1,0 +1,569 @@
+Metadata-Version: 2.4
+Name: gqex
+Version: 0.1.1
+Summary: Generative Quantum Eigensolver eXtended — a scalable, RetNet-driven GQE-QSCI pipeline targeting ~40-qubit quantum chemistry problems.
+Author-email: Ashraf Boussahi <a.boussahi@esi-sba.dz>
+Maintainer-email: Ashraf Boussahi <a.boussahi@esi-sba.dz>
+License: MIT License
+        
+        Copyright (c) 2026 Ashraf Boussahi
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Homepage, https://github.com/AshrafBoussahi/gqex
+Project-URL: Repository, https://github.com/AshrafBoussahi/gqex
+Project-URL: Bug Tracker, https://github.com/AshrafBoussahi/gqex/issues
+Project-URL: Documentation, https://github.com/AshrafBoussahi/gqex#readme
+Keywords: quantum-computing,quantum-chemistry,generative-quantum-eigensolver,gqe,qsci,retnet,vqe,cudaq,openfermion,pyscf,adapt-vqe,ground-state
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: torch>=2.0
+Requires-Dist: openfermion>=1.5
+Requires-Dist: openfermionpyscf>=0.5
+Requires-Dist: pyscf>=2.3
+Provides-Extra: cuda
+Requires-Dist: cudaq>=0.7; extra == "cuda"
+Provides-Extra: dev
+Requires-Dist: pytest>=7; extra == "dev"
+Requires-Dist: pytest-cov>=4; extra == "dev"
+Requires-Dist: black>=23; extra == "dev"
+Requires-Dist: isort>=5; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Requires-Dist: mypy>=1.5; extra == "dev"
+Requires-Dist: ipython>=8; extra == "dev"
+Provides-Extra: viz
+Requires-Dist: matplotlib>=3.7; extra == "viz"
+Requires-Dist: jupyter>=1.0; extra == "viz"
+Requires-Dist: seaborn>=0.12; extra == "viz"
+Provides-Extra: all
+Requires-Dist: gqex[cuda,dev,viz]; extra == "all"
+Dynamic: license-file
+
+# gqex
+
+**Generative Quantum Eigensolver eXtended** — a scalable, RetNet-driven
+GQE-QSCI pipeline targeting ~40-qubit electronic-structure problems.
+
+[![PyPI](https://img.shields.io/pypi/v/gqex.svg)](https://pypi.org/project/gqex/)
+[![Python](https://img.shields.io/pypi/pyversions/gqex.svg)](https://pypi.org/project/gqex/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+`gqex` re-engineers the Generative Quantum Eigensolver
+([Nakaji et al. 2024](https://arxiv.org/abs/2401.09253)) for scalability:
+a multi-head **Retentive Network** generates discrete circuits, a
+**number-preserving gate pool** removes wasted shots, a **persistent
+determinant bank** accumulates samples across all RL iterations, and an
+**ADAPT-VQE bootstrap** seeds the search with a strong initial circuit.
+The pipeline is fully packaged, importable as a Python library, and
+ships with reproducible quick-start configurations for 12-, 24-, and
+40-qubit regimes.
+
+---
+
+## Table of contents
+
+1. [Highlights](#highlights)
+2. [Installation](#installation)
+3. [Quick start](#quick-start)
+4. [Package architecture](#package-architecture)
+5. [Detailed usage guide](#detailed-usage-guide)
+6. [Configuration reference](#configuration-reference)
+7. [Pre-built molecule library](#pre-built-molecule-library)
+8. [Results](#results)
+9. [Roadmap](#roadmap)
+10. [Contributing](#contributing)
+11. [Citation](#citation)
+12. [License](#license)
+
+---
+
+## Highlights
+
+- **One-line install:** `pip install gqex`
+- **One-line run:** `from gqex import GQExPipeline, MolecularSystem, quick_config`
+- **Eight scalability levers** baked into a single pipeline:
+  1. Number-preserving Givens-rotation gate pool
+  2. Persistent determinant bank (cross-iteration shot reuse)
+  3. Z2 qubit tapering
+  4. Hamiltonian subspace optimisation hook
+  5. Entanglement forging for closed-shell systems
+  6. ADAPT-style fermionic / Givens pool
+  7. SQD configuration recovery
+  8. **RetNet generator** with O(T) recurrent inference
+- **Validated** to within 0.00 mHa of FCI on H2O / STO-3G / 12 qubits.
+- **CUDA-Q backend** with optional CPU fallback.
+- **Fully modular** — each subsystem is importable and replaceable.
+
+---
+
+## Installation
+
+### Basic install (CPU)
+
+```bash
+pip install gqex
+```
+
+### With NVIDIA CUDA-Q backend (recommended)
+
+```bash
+pip install "gqex[cuda]"
+```
+
+> CUDA-Q requires NVIDIA hardware and CUDA 12.x. On Linux, follow
+> the [official CUDA-Q installation guide](https://nvidia.github.io/cuda-quantum/)
+> for system prerequisites.
+
+### Development install
+
+```bash
+git clone https://github.com/AshrafBoussahi/gqex.git
+cd gqex
+pip install -e ".[dev,cuda]"
+```
+
+### Optional extras
+
+| Extra   | Install command                | Purpose                       |
+|---------|--------------------------------|-------------------------------|
+| `cuda`  | `pip install "gqex[cuda]"`     | NVIDIA CUDA-Q quantum backend |
+| `dev`   | `pip install "gqex[dev]"`      | Testing, linting, formatting  |
+| `viz`   | `pip install "gqex[viz]"`      | Matplotlib + Jupyter          |
+| `all`   | `pip install "gqex[all]"`      | Everything                    |
+
+### Requirements
+
+- Python 3.9 – 3.12
+- NumPy, SciPy, PyTorch ≥ 2.0
+- PySCF, OpenFermion, OpenFermion-PySCF
+- (optional) CUDA-Q ≥ 0.7
+
+---
+
+## Quick start
+
+### Three-line demo
+
+```python
+from gqex import GQExPipeline, MolecularSystem, quick_config
+
+h2o = MolecularSystem(
+    name               = "H2O",
+    xyz                = "O 0 0 0\nH 0.757 0.586 0\nH -0.757 0.586 0",
+    basis              = "sto-3g",
+    n_active_electrons = 8,
+    n_active_orbitals  = 6,
+    compute_casci      = True,
+)
+results = GQExPipeline(h2o, quick_config("small")).run()
+print(f"Final energy: {results['bank_energy']:+.6f} Ha")
+```
+
+### Command-line demo
+
+After installation a CLI is exposed:
+
+```bash
+gqex-demo --mol h2o   --size small
+gqex-demo --mol beh2  --size medium
+gqex-demo --mol n2_large --size large
+```
+
+Or run directly:
+
+```bash
+python demo.py --mol h2o --size small
+```
+
+---
+
+## Package architecture
+
+```
+gqex/
+├── hamiltonian/       # MolecularSystem, JW mapping, Z2 tapering
+├── ansatz/            # Gate pools (Standard, NumberPreserving, Fermionic)
+│                      # + CUDA-Q kernel factories
+├── generator/         # RetNet generator + sampling utilities
+├── qsci/              # QSCI evaluator, persistent DeterminantBank, SQD
+├── gqe/               # REINFORCE training engine + L-BFGS-B fine-tuner
+├── adapt/             # ADAPT-VQE greedy bootstrap
+├── forging/           # Entanglement forging (closed-shell halving)
+├── pipeline/          # PipelineConfig + GQExPipeline orchestrator
+└── utils/             # OpenFermion ↔ CUDA-Q conversions
+```
+
+Each sub-package solves one specific scalability bottleneck of the
+baseline GQE. See the section comments in each `.py` file for
+implementation details.
+
+---
+
+## Detailed usage guide
+
+### 1. Defining a molecule
+
+```python
+from gqex import MolecularSystem
+
+system = MolecularSystem(
+    name               = "BeH2",
+    xyz                = "Be 0 0 0\nH 0 0 1.33\nH 0 0 -1.33",
+    basis              = "6-31g",
+    charge             = 0,
+    spin               = 0,
+    n_active_electrons = 4,
+    n_active_orbitals  = 12,
+    compute_casci      = True,   # produce a CASCI reference for error reporting
+)
+```
+
+If you call `GQExPipeline.run()` the Hamiltonian is built automatically.
+You can also build it explicitly:
+
+```python
+from gqex.hamiltonian.molecular_system import build_molecular_hamiltonian
+
+build_molecular_hamiltonian(
+    system,
+    taper        = True,         # enable Z2 qubit tapering
+    taper_method = "z2",
+)
+print(f"Qubits after tapering: {system.n_qubits}")
+print(f"Pauli terms:           {system.n_pauli_terms}")
+```
+
+### 2. Choosing a configuration
+
+The fastest path is one of three presets:
+
+```python
+from gqex import quick_config
+
+cfg = quick_config("small")    # ≤ 12 qubits, ~minutes
+cfg = quick_config("medium")   # 16–24 qubits, ~tens of minutes (default)
+cfg = quick_config("large")    # 28–40 qubits, ~hours
+```
+
+You can override any field in place:
+
+```python
+cfg.gqe.n_iters       = 200
+cfg.gqe.n_samples     = 32
+cfg.gqe.device        = "cuda"
+cfg.taper.enabled     = True
+cfg.bank.max_size     = 200_000
+```
+
+### 3. Running the full pipeline
+
+```python
+from gqex import GQExPipeline
+
+pipeline = GQExPipeline(system, cfg)
+results  = pipeline.run()
+```
+
+The orchestrator runs every stage in order:
+
+| Stage | What it does                                                |
+|-------|-------------------------------------------------------------|
+| 0     | ADAPT-VQE bootstrap — greedy gate selection                 |
+| A     | RetNet + REINFORCE policy-gradient training                 |
+| B     | QSCI evaluation of the elite circuit                        |
+| C     | Persistent bank QSCI diagonalisation                        |
+| D     | Generalised-eigenvalue global refinement                    |
+| E     | L-BFGS-B continuous-angle fine-tuning                       |
+| F     | Summary printout                                            |
+
+The return value is a dictionary:
+
+```python
+results = {
+    "adapt_energy":    ...,   # ADAPT bootstrap result
+    "rl_best_energy":  ...,   # best discrete circuit from RL
+    "qsci_energy":     ...,   # QSCI on the elite circuit
+    "bank_energy":     ...,   # QSCI over the full persistent bank
+    "global_energy":   ...,   # generalised-eigenvalue refinement
+    "finetune_energy": ...,   # L-BFGS-B continuous fine-tuning
+    "best_ops":        [...], # discrete gate-index sequence
+    "history":         {...}, # per-iteration training history
+    "n_qubits":        ...,
+    "pool_size":       ...,
+}
+```
+
+### 4. Using individual sub-modules
+
+You don't have to use the full pipeline. Every component is importable
+on its own.
+
+#### Build a number-preserving gate pool
+
+```python
+from gqex.ansatz import build_pool, build_kernel
+
+pool   = build_pool("np", n_qubits=12,
+                   include_givens_adj=True,
+                   include_givens_lr=True,
+                   include_double_exc=True)
+kernel = build_kernel(pool, hf_x_qubits=[0, 1, 2, 3])
+print(pool.describe())
+```
+
+#### Run the ADAPT bootstrap stand-alone
+
+```python
+from gqex.adapt import adapt_bootstrap, ADAPTConfig
+
+adapt_ops, adapt_e = adapt_bootstrap(
+    pool   = pool,
+    system = system,
+    kernel = kernel,
+    cfg    = ADAPTConfig(max_gates=30, energy_tol=1e-4),
+)
+```
+
+#### Train just the RetNet generator
+
+```python
+from gqex.generator import RetNetGenerator, RetNetConfig
+
+gen = RetNetGenerator(RetNetConfig(
+    pool_size  = pool.pool_size,
+    hidden_dim = 128,
+    n_layers   = 4,
+    n_heads    = 4,
+    max_len    = 256,
+    gated_mlp  = True,
+))
+```
+
+#### Maintain a persistent determinant bank
+
+```python
+from gqex.qsci import DeterminantBank
+
+bank = DeterminantBank(max_size=50_000,
+                       n_alpha=2, n_beta=2,
+                       n_qubits=12)
+bank.update(["010101", "101010"])    # contribute samples
+print(bank.stats())                  # {'size': ..., 'total_shots': ...}
+```
+
+#### Run QSCI directly
+
+```python
+from gqex.qsci import QSCIEvaluator, QSCIConfig
+
+qsci = QSCIEvaluator(system, QSCIConfig(n_shots=20_000, d_max=500),
+                     bank=bank)
+energy, wavefunction, n_dets = qsci.evaluate(kernel, adapt_ops)
+```
+
+#### Fine-tune continuous angles
+
+```python
+from gqex.gqe import finetune_circuit
+
+theta_opt, e_ft = finetune_circuit(
+    best_ops = results["best_ops"],
+    pool     = pool,
+    system   = system,
+    max_iter = 400,
+)
+```
+
+---
+
+## Configuration reference
+
+The master configuration is `PipelineConfig`:
+
+```python
+from gqex.pipeline.config import (
+    PipelineConfig, PoolConfig, TaperingConfig, BankConfig,
+    FinetuneConfig, RefinementConfig,
+)
+from gqex.gqe.engine    import GQEConfig
+from gqex.qsci.evaluator import QSCIConfig
+from gqex.generator.retnet import RetNetConfig
+from gqex.adapt.bootstrap   import ADAPTConfig
+```
+
+### Key knobs
+
+| Field                            | Default       | Meaning                                          |
+|----------------------------------|---------------|--------------------------------------------------|
+| `gqe.depth`                      | `0` (auto)    | circuit depth (0 → 4 × n_qubits)                 |
+| `gqe.n_samples`                  | `16`          | circuits sampled per RL iteration                |
+| `gqe.n_iters`                    | `120`         | total RL iterations                              |
+| `gqe.lr`                         | `3e-3`        | Adam learning rate                               |
+| `gqe.reward_mode`                | `"qsci"`      | `"expectation"` (fast) or `"qsci"` (paper mode)  |
+| `gqe.device`                     | `"auto"`      | `"auto"`, `"cpu"`, `"cuda"`                      |
+| `gqe.use_recurrent`              | `True`        | use RetNet O(T) recurrent sampling               |
+| `gqe.use_rank_adv`               | `True`        | rank-based advantages (robust to scale)          |
+| `gqe.diversity_coef`             | `0.05`        | bonus for unique circuits in a batch             |
+| `gqe.entropy_coef`               | `0.10`        | entropy regulariser                              |
+| `gqe.temperature`                | `1.5`         | sampling temperature (annealed to 1.0)           |
+| `pool.pool_type`                 | `"np"`        | `"standard"`, `"np"`, `"fermionic"`              |
+| `pool.include_givens_adj/lr/...` | `True`/`...`  | which gate families to include                   |
+| `taper.enabled`                  | `False`       | run Z2 qubit tapering                            |
+| `bank.enabled`                   | `True`        | use persistent determinant bank                  |
+| `bank.max_size`                  | `100_000`     | cap on bank size                                 |
+| `adapt.enabled`                  | `True`        | run ADAPT-VQE bootstrap                          |
+| `adapt.max_gates`                | `30`          | maximum gates the bootstrap appends              |
+| `finetune.enabled`               | `True`        | run L-BFGS-B continuous fine-tune                |
+| `gen.hidden_dim`                 | `128`         | RetNet width                                     |
+| `gen.n_layers`                   | `4`           | RetNet depth                                     |
+| `gen.n_heads`                    | `4`           | RetNet retention heads                           |
+| `qsci.n_shots`                   | `30_000`      | shots per QSCI evaluation                        |
+| `qsci.d_max`                     | `800`         | max determinants kept                            |
+
+See `gqex/pipeline/config.py` and `gqex/gqe/engine.py` for every knob.
+
+---
+
+## Pre-built molecule library
+
+The `demo.py` script ships a tested molecule library:
+
+| Key            | System       | Basis    | Qubits | Notes                              |
+|----------------|--------------|----------|--------|------------------------------------|
+| `h2`           | H2           | sto-3g   | 4      | Toy validation                     |
+| `h2o`          | H2O          | 6-31g    | 14     | Standard medium-size benchmark     |
+| `lih`          | LiH          | 6-31g    | 10     | Frozen-core small system           |
+| `beh2_small`   | BeH2         | sto-3g   | 14     | Fast iteration                     |
+| `beh2`         | BeH2         | 6-31g    | 24     | Original GQE paper benchmark       |
+| `n2_large`     | N2           | cc-pVDZ  | 40     | ~40-qubit scaling target           |
+
+Custom molecules: subclass `MolecularSystem` or just pass an `xyz`
+string of your choice.
+
+---
+
+## Results
+
+### Headline result — H2O / STO-3G / 12 qubits
+
+| Quantity                     | Energy (Ha)     | |Δ| vs FCI (mHa) |
+|------------------------------|-----------------|------------------|
+| Hartree-Fock                 | −74.961902      | 50.69            |
+| ADAPT bootstrap              | −74.961902      | 50.69            |
+| RL best (raw)                | −75.012451      | 0.14             |
+| QSCI on elite circuit        | −75.012294      | 0.30             |
+| **Bank QSCI (gqex)**         | **−75.012596**  | **0.00**         |
+| Global refinement            | −75.012596      | 0.00             |
+| CASCI / FCI reference        | −75.012596      | —                |
+
+The full **50.7 mHa of correlation energy** is recovered. The
+`bank_energy` matches FCI to within numerical precision, well below the
+1.6 mHa chemical-accuracy threshold.
+
+### Larger systems
+
+| System         | Qubits     | Status        | Best |Δ| from CASCI        |
+|----------------|------------|---------------|----------------------------|
+| H2O / STO-3G   | 12         | Validated     | 0.00 mHa                   |
+| BeH2 / 6-31g   | 24         | RL converges  | 28 mHa (CPU, partial run)  |
+| N2   / 6-31g   | 32 → 28*   | Builds & runs | bigger-budget benchmark    |
+
+*after Z2 tapering.
+
+---
+
+## Roadmap
+
+- [ ] **GPU sampling parity** — push `n_samples ≥ 64` on CUDA
+- [ ] **PPO-style trust-region updates** for more stable policy training
+- [ ] **PySCF `kernel_fixed_space`** integration for fast H_sub diagonalisation
+- [ ] **Full Z2 + non-Abelian tapering** (currently Z2-only)
+- [ ] **Entanglement-forging pipeline path** (module exists, not yet wired)
+- [ ] **Imitation pretraining** on UCCSD orderings before RL
+- [ ] **Multi-fidelity sampling** (cheap classical eval + expensive quantum eval)
+- [ ] **Continuous-fermion ADAPT** with parameter-shift gradients
+
+Contributions on any of these are welcome — see below.
+
+---
+
+## Contributing
+
+```bash
+git clone https://github.com/AshrafBoussahi/gqex.git
+cd gqex
+pip install -e ".[dev,cuda]"
+pytest                # run the test-suite
+black gqex/ && isort gqex/ && ruff check gqex/
+```
+
+Open a Pull Request describing the change. Tests on at least the
+H2O / STO-3G benchmark are appreciated for any algorithmic change.
+
+---
+
+## Citation
+
+If you use `gqex` in academic work, please cite:
+
+```bibtex
+@software{gqex2026,
+    author  = {Boussahi, Ashraf},
+    title   = {{gqex}: A scalable RetNet-driven Generative Quantum Eigensolver
+               package for $\sim$40-qubit quantum chemistry},
+    year    = {2026},
+    url     = {https://github.com/AshrafBoussahi/gqex},
+    version = {0.1.0},
+}
+```
+
+Underlying methods you should also cite:
+
+- Nakaji et al., *Generative Quantum Eigensolver*, arXiv:2401.09253 (2024)
+- Sun et al., *Retentive Network*, arXiv:2307.08621 (2023)
+- Kemmoku et al., *Quantum-Selected CI*, arXiv:2403.13800 (2024)
+- Grimsley et al., *ADAPT-VQE*, Nat. Commun. 10, 3007 (2019)
+- Bravyi et al., *Z2 tapering*, arXiv:1701.08213 (2017)
+
+---
+
+## License
+
+`gqex` is distributed under the MIT License — see [LICENSE](LICENSE) for
+the full text.
+
+Copyright © 2026 Ashraf Boussahi.

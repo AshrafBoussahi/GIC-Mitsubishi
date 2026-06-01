@@ -1,0 +1,146 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# ---------------------------------------------------------------------------
+# Project metadata
+# ---------------------------------------------------------------------------
+[project]
+name            = "gqex"
+version         = "0.1.1"
+description     = "Generative Quantum Eigensolver eXtended — a scalable, RetNet-driven GQE-QSCI pipeline targeting ~40-qubit quantum chemistry problems."
+readme          = "README.md"
+license         = { file = "LICENSE" }
+requires-python = ">=3.9"
+
+authors = [
+    { name = "Ashraf Boussahi", email = "a.boussahi@esi-sba.dz" },
+]
+
+maintainers = [
+    { name = "Ashraf Boussahi", email = "a.boussahi@esi-sba.dz" },
+]
+
+keywords = [
+    "quantum-computing",
+    "quantum-chemistry",
+    "generative-quantum-eigensolver",
+    "gqe",
+    "qsci",
+    "retnet",
+    "vqe",
+    "cudaq",
+    "openfermion",
+    "pyscf",
+    "adapt-vqe",
+    "ground-state",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# ---------------------------------------------------------------------------
+# Core runtime dependencies
+# ---------------------------------------------------------------------------
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "torch>=2.0",
+    "openfermion>=1.5",
+    "openfermionpyscf>=0.5",
+    "pyscf>=2.3",
+]
+
+# ---------------------------------------------------------------------------
+# Optional dependency groups  (pip install "gqex[cuda]" etc.)
+# ---------------------------------------------------------------------------
+[project.optional-dependencies]
+
+# NVIDIA CUDA-Q backend (preferred quantum simulator)
+cuda = [
+    "cudaq>=0.7",
+]
+
+# Developer / contributor tooling
+dev = [
+    "pytest>=7",
+    "pytest-cov>=4",
+    "black>=23",
+    "isort>=5",
+    "ruff>=0.1",
+    "mypy>=1.5",
+    "ipython>=8",
+]
+
+# Notebooks & visualisation
+viz = [
+    "matplotlib>=3.7",
+    "jupyter>=1.0",
+    "seaborn>=0.12",
+]
+
+# Convenience meta-extra: everything
+all = [
+    "gqex[cuda,dev,viz]",
+]
+
+# ---------------------------------------------------------------------------
+# Project URLs
+# ---------------------------------------------------------------------------
+[project.urls]
+Homepage      = "https://github.com/AshrafBoussahi/gqex"
+Repository    = "https://github.com/AshrafBoussahi/gqex"
+"Bug Tracker" = "https://github.com/AshrafBoussahi/gqex/issues"
+Documentation = "https://github.com/AshrafBoussahi/gqex#readme"
+
+# ---------------------------------------------------------------------------
+# Console-script entry point
+# ---------------------------------------------------------------------------
+[project.scripts]
+gqex-demo = "demo:run_demo"
+
+# ---------------------------------------------------------------------------
+# Setuptools package discovery
+# ---------------------------------------------------------------------------
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where    = ["."]
+include  = ["gqex*"]
+exclude  = ["tests*", "examples*", "__pycache__*"]
+
+# ---------------------------------------------------------------------------
+# Tool configurations
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length    = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.isort]
+profile     = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths  = ["tests"]
+addopts    = "-ra --strict-markers"
